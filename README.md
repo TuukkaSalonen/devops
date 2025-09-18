@@ -1,2 +1,3 @@
 # devops
-Projects from course Development and Deployment - DevOps
+Project 1: Basics of containers and microservices
+

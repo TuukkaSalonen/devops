@@ -1,0 +1,48 @@
+
+services:
+  service1:
+    container_name: service1
+    build: ./service1
+    ports:
+      - "8119:8080"
+    environment:
+      - PORT=8080
+      - SERVICE2_PORT=8081
+      - STORAGE_PORT=8082
+    networks:
+      - private_network
+      - public_network
+    depends_on:
+      - service2
+      - storage
+    volumes:
+      - ./vstorage:/vstorage.txt
+
+  service2:
+    container_name: service2
+    build: ./service2
+    environment:
+      - PORT=8081
+      - STORAGE_PORT=8082
+    networks:
+      - private_network
+    volumes:
+      - ./vstorage:/vstorage.txt
+
+  storage:
+    container_name: storage
+    build: ./storage
+    networks:
+      - private_network
+    volumes:
+      - storage_data:/data
+
+networks:
+  public_network:
+    driver: bridge
+  private_network:
+    driver: bridge
+    internal: true
+
+volumes:
+  storage_data:
