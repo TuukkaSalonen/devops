@@ -1,4 +1,4 @@
-import express, { response } from "express";
+import express from "express";
 import proxy from "express-http-proxy";
 import os from "os";
 import checkDiskSpace from "check-disk-space";
@@ -9,7 +9,7 @@ const env = process.env;
 
 const port = env.PORT || 8080;
 const service2Port = env.SERVICE2_PORT || 8081;
-const storagePort = env.STORAGE_PORT || 1234;
+const storagePort = env.STORAGE_PORT || 8082;
 
 const vstorage_file = "/vstorage.txt";
 

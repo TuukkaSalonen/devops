@@ -1,4 +1,4 @@
-
+name: exercise1
 services:
   service1:
     container_name: service1
@@ -10,8 +10,7 @@ services:
       - SERVICE2_PORT=8081
       - STORAGE_PORT=8082
     networks:
-      - private_network
-      - public_network
+      - service_network
     depends_on:
       - service2
       - storage
@@ -25,7 +24,7 @@ services:
       - PORT=8081
       - STORAGE_PORT=8082
     networks:
-      - private_network
+      - service_network
     volumes:
       - ./vstorage:/vstorage.txt
 
@@ -33,16 +32,13 @@ services:
     container_name: storage
     build: ./storage
     networks:
-      - private_network
+      - service_network
     volumes:
       - storage_data:/data
 
 networks:
-  public_network:
+  service_network:
     driver: bridge
-  private_network:
-    driver: bridge
-    internal: true
 
 volumes:
   storage_data:

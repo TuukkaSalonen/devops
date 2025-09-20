@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 app = Flask(__name__)
 app.config["PORT"] = os.getenv("PORT", 8081)
-app.config["STORAGE_PORT"] = os.getenv("STORAGE_PORT", 1234)
+app.config["STORAGE_PORT"] = os.getenv("STORAGE_PORT", 8082)
 
 vstorage_file = "/vstorage.txt"
 
