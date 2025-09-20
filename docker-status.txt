@@ -1,0 +1,12 @@
+tuukkasal@tuukkasal:~/devops$ docker container ls
+CONTAINER ID   IMAGE                COMMAND                  CREATED              STATUS          PORTS                                         NAMES
+a5f66e806d1a   exercise1-service1   "docker-entrypoint.s…"   About a minute ago   Up 22 seconds   0.0.0.0:8119->8080/tcp, [::]:8119->8080/tcp   service1
+511a5ee3346c   exercise1-service2   "python server.py"       About a minute ago   Up 22 seconds                                                 service2
+072dbfe869e9   exercise1-storage    "dotnet Storage.dll"     About a minute ago   Up 22 seconds                                                 storage
+
+tuukkasal@tuukkasal:~/devops$ docker network ls
+NETWORK ID     NAME                        DRIVER    SCOPE
+ac1f6aa768b3   bridge                      bridge    local
+6bfbd63c59af   exercise1_service_network   bridge    local
+aa0a5c6e523d   host                        host      local
+210266dd003c   none                        null      local

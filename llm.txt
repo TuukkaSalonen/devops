@@ -1,0 +1,18 @@
+Large language models were used during this exercise.
+
+Tool:
+- ChatGPT
+
+Motivation/reason:
+- Faster and more direct help to problems.
+
+How and why:
+- Permission issue help with Docker on a virtual machine where the containers could not be removed.
+- Suggestions for .NET since I hadn't used it at all before.
+- Explanation on how WSL disks work.
+
+Mistakes LLM did:
+- The suggestions it gave for the permission problem didn't help at first.
+
+Things LLM was not able to provide:
+- This time the LLM was able to provide what I asked after given additional context (greps).

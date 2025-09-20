@@ -20,6 +20,4 @@ COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:8082
 
-EXPOSE 8082
-
 CMD ["dotnet", "Storage.dll"]

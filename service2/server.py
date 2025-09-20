@@ -12,7 +12,6 @@ app.config["STORAGE_PORT"] = os.getenv("STORAGE_PORT", 8082)
 
 vstorage_file = "/vstorage.txt"
 
-
 @app.route("/status", methods=["GET"])
 def status():
     print("Service 2: status request received")
