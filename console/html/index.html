@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Management Console</title>
+  </head>
+  <body>
+    <div id="title">
+      <h1>Management Console</h1>
+      <h2 id="version">Version: 1.1</h2>
+    </div>
+    <!-- Login -->
+    <div id="loginDiv">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <label>Username:</label>
+        <input type="text" name="username" required /><br />
+        <label>Password:</label>
+        <input type="password" name="password" required /><br />
+        <button type="submit">Login</button>
+      </form>
+      <p id="loginError" style="color: red"></p>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardDiv" style="display: none">
+      <h2>Dashboard</h2>
+      <button id="logoutBtn">LOGOUT</button>
+      <button id="switchBtn">SWITCH VERSION</button>
+      <button id="discardBtn">DISCARD OLD</button>
+      <button id="resetLogBtn">RESET LOG</button>
+      <button id="addLogEntryBtn">ADD LOG ENTRY</button>
+
+      <h3>Container Metrics:</h3>
+      <table id="containerMetricsTable" border="1">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Image</th>
+            <th>State</th>
+            <th>Status</th>
+            <th>Uptime (s)</th>
+            <th>CPU (%)</th>
+            <th>Memory (used/available)</th>
+            <th>Memory (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="8">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Logs:</h3>
+      <pre id="logs">Loading...</pre>
+
+      <h3>Optional access token for curl requests to API (1h lifetime):</h3>
+      <p>Use as: <code>Authorization: Bearer &lt;token&gt;</code></p>
+      <p>
+        <span id="accessTokenContainer"
+          >Token: <span id="accessToken">Loading...</span></span
+        >
+      </p>
+    </div>
+
+    <script src="/js/app.js"></script>
+  </body>
+</html>

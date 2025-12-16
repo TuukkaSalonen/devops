@@ -1,0 +1,55 @@
+services:
+  service1_green:
+    container_name: service1_green
+    image: harbor.treok.eu/devops_project_httusa/service1_green:latest
+    environment:
+      - PORT=8080
+      - SERVICE2_PORT=8081
+      - STORAGE_PORT=8082
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "8090:8080"
+    volumes:
+      - /opt/nginx/active_version.env:/etc/nginx/active_version.env:ro
+    networks:
+      - service_network
+    depends_on:
+      - service2_green
+
+  service2_green:
+    container_name: service2_green
+    image: harbor.treok.eu/devops_project_httusa/service2_green:latest
+    environment:
+      - PORT=8081
+      - STORAGE_PORT=8082
+    networks:
+      - service_network
+
+  console_green:
+    container_name: console_green
+    image: harbor.treok.eu/devops_project_httusa/console_green:latest
+    environment:
+      - PORT=8083
+      - SERVICE1_PORT=8080
+      - SERVICE2_PORT=8081
+      - STORAGE_PORT=8082
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_USER=${ADMIN_USER}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - TARGET_HOST=${TARGET_HOST}
+    ports:
+      - "8093:8083"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/local/bin/switch_version.sh:/usr/local/bin/switch_version.sh:ro
+      - /home/ubuntu/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - /home/ubuntu/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+    networks:
+      - service_network
+    depends_on:
+      - service1_green
+      - service2_green
+
+networks:
+  service_network:
+    external: true
