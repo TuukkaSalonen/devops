@@ -1,0 +1,30 @@
+---
+- name: Deploy application on VM
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /opt/exercise3
+
+  tasks:
+    - name: Check directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+
+    - name: Copy docker compose file
+      ansible.builtin.copy:
+        src: docker-compose.yml
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+
+    - name: Pull images
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.yml pull
+        chdir: "{{ app_dir }}"  
+
+    - name: Start application
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.yml up -d
+        chdir: "{{ app_dir }}"

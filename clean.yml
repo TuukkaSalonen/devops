@@ -1,0 +1,12 @@
+---
+- name: Clean application data
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /opt/exercise3
+    volume_name: exercise3_storage_data
+
+  tasks:
+    - name: Clear storage inside container
+      ansible.builtin.command:
+        cmd: "docker exec storage sh -c 'rm -rf /data/*'"

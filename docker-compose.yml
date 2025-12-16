@@ -1,0 +1,39 @@
+services:
+  service1:
+    container_name: service1
+    image: harbor.treok.eu/devops_exercise3_httusa/service1:latest
+    ports:
+      - "8199:8080"
+    environment:
+      - PORT=8080
+      - SERVICE2_PORT=8081
+      - STORAGE_PORT=8082
+    networks:
+      - service_network
+    depends_on:
+      - service2
+      - storage
+
+  service2:
+    container_name: service2
+    image: harbor.treok.eu/devops_exercise3_httusa/service2:latest
+    environment:
+      - PORT=8081
+      - STORAGE_PORT=8082
+    networks:
+      - service_network
+
+  storage:
+    container_name: storage
+    image: harbor.treok.eu/devops_exercise3_httusa/storage:latest
+    networks:
+      - service_network
+    volumes:
+      - storage_data:/data
+
+networks:
+  service_network:
+    driver: bridge
+
+volumes:
+  storage_data:
