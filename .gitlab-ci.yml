@@ -1,0 +1,159 @@
+stages:
+  - build
+  - test
+  - package
+  - smoke
+  - deploy
+
+variables:
+  DOCKER_HOST: "unix:///runner/services/docker/docker.sock"
+  SSH_PRIVATE_KEY: "$SSH_PRIVATE_KEY"
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+  TARGET_HOST: "$TARGET_HOST"
+  TARGET_USER: "$TARGET_USER"
+  JWT_SECRET: "$JWT_SECRET"
+
+# Build job for service1
+build_service1:
+  stage: build
+  image: node:24.0.0-alpine
+  script:
+    - echo "Building service1..."
+    - npm ci --prefix service1
+    - npx --prefix service1 tsc --project service1/tsconfig.json --outDir service1/build
+  artifacts:
+    paths:
+      - service1/build/
+      - service1/node_modules/
+    expire_in: 1 hour
+
+# Build job for service2
+build_service2:
+  stage: build
+  image: python:3.11-slim
+  script:
+    - echo "Building service2..."
+    - pip install --upgrade pip
+    - pip install -r service2/requirements.txt --target service2/build
+  artifacts:
+    paths:
+      - service2/build/
+    expire_in: 1 hour
+
+# Build job for storage
+build_storage:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:7.0
+  script:
+    - echo "Building storage..."
+    - dotnet publish storage/Storage.csproj -c Release -o storage/publish
+  artifacts:
+    paths:
+      - storage/publish/
+    expire_in: 1 hour
+
+# Build job for console
+build_console:
+  stage: build
+  image: node:24.0.0-alpine
+  script:
+    - echo "Building console..."
+    - npm ci --prefix console
+  artifacts:
+    paths:
+      - console/node_modules/
+    expire_in: 1 hour
+
+# Test job for service1
+test_service1:
+  stage: test
+  image: node:24.0.0-alpine
+  script:
+    - echo "Testing service1..."
+    - npx ts-node service1/index.ts
+
+# Test job for service2
+test_service2:
+  stage: test
+  image: python:3.11-slim
+  script:
+    - echo "Testing service2..."
+    - python3 -c "import sys; sys.path.insert(0,'./service2'); sys.path.insert(0,'./service2/build'); import server"
+
+# Test job for storage
+test_storage:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:7.0
+  script:
+    - echo "Testing storage..."
+    - test -f storage/publish/Storage.dll
+
+# Test job for console
+test_console:
+  stage: test
+  image: node:24.0.0-alpine
+  script:
+    - echo "Testing console..."
+    - node -e "require('./console')"
+
+# Package job to build and push Docker images
+package:
+  stage: package
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - echo "Logging in to Harbor..."
+    - echo "$HARBOR_PASSWORD" | docker login harbor.treok.eu -u httusa --password-stdin
+
+    - echo "Building Docker images..."
+    - docker build --no-cache -f service1/Dockerfile -t harbor.treok.eu/devops_project_httusa/service1_blue:latest ./service1
+    - docker build --no-cache -f service2/Dockerfile -t harbor.treok.eu/devops_project_httusa/service2_blue:latest ./service2
+    - docker build --no-cache -f console/Dockerfile -t harbor.treok.eu/devops_project_httusa/console_blue:latest ./console
+    - docker build --no-cache -f storage/Dockerfile -t harbor.treok.eu/devops_project_httusa/storage:latest ./storage
+
+    - echo "Pushing images to Harbor..."
+    - docker push harbor.treok.eu/devops_project_httusa/service1_blue:latest
+    - docker push harbor.treok.eu/devops_project_httusa/service2_blue:latest
+    - docker push harbor.treok.eu/devops_project_httusa/console_blue:latest
+    - docker push harbor.treok.eu/devops_project_httusa/storage:latest
+
+# Launch containers to check they start correctly
+smoke_test:
+  stage: smoke
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - echo "Starting containers for smoke test..."
+    - docker network create service_network || true
+    - docker run -d --name service2 --network service_network -e PORT=8081 -e STORAGE_PORT=8082 harbor.treok.eu/devops_project_httusa/service2_blue:latest
+    - docker run -d --name service1 --network service_network -e PORT=8080 -e SERVICE2_PORT=8081 -e STORAGE_PORT=8082 -e JWT_SECRET=${JWT_SECRET} harbor.treok.eu/devops_project_httusa/service1_blue:latest
+    - docker run -d --name console --network service_network -v /var/run/docker.sock:/var/run/docker.sock -e PORT=8083 -e SERVICE1_PORT=8080 harbor.treok.eu/devops_project_httusa/console_blue:latest
+    - docker run -d --name storage --network service_network -v storage_data:/data harbor.treok.eu/devops_project_httusa/storage:latest
+    - echo "Smoke test passed."
+
+  after_script:
+    - echo "Stopping and removing all containers..."
+    - docker rm -f $(docker ps -aq) || true
+    - echo "Removing all images..."
+    - docker rmi -f $(docker images -aq) || true
+    - echo "Pruning unused data..."
+    - docker system prune -af || true
+
+# Deploy job to deploy application
+deploy:
+  stage: deploy
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache python3 py3-pip ansible openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $TARGET_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "Deploying..."
+    - ansible-playbook -i "$TARGET_HOST," deploy.yml -u $TARGET_USER
+  after_script:
+    - shred -u ~/.ssh/id_rsa || rm -f ~/.ssh/id_rsa
+    - rm -f ~/.ssh/known_hosts

@@ -1,0 +1,77 @@
+---
+- name: Deploy application on VM
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /opt/project_1-0
+
+  tasks:
+    - name: Ensure app directory exists
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+
+    - name: Copy shared compose file
+      ansible.builtin.copy:
+        src: docker-compose.shared.yml
+        dest: "{{ app_dir }}/docker-compose.shared.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+
+    - name: Copy docker compose file
+      ansible.builtin.copy:
+        src: docker-compose.yml
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+
+    - name: Ensure docker network exists
+      ansible.builtin.command:
+        cmd: docker network inspect service_network
+      register: network_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create docker network if it does not exist
+      ansible.builtin.command:
+        cmd: docker network create service_network
+      when: network_check.rc != 0
+
+    - name: Pull shared service images (storage)
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.shared.yml pull
+        chdir: "{{ app_dir }}"
+
+    - name: Check if storage container exists
+      ansible.builtin.command: docker ps -a -q -f name=^storage$
+      register: storage_check
+      changed_when: false
+      failed_when: false
+
+    - name: Start shared services (storage) only if not exists
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.shared.yml up -d
+        chdir: "{{ app_dir }}"
+      when: storage_check.stdout == ""  
+
+    - name: Pull per-version images (blue/green)
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.yml pull
+        chdir: "{{ app_dir }}"
+      environment:
+        JWT_SECRET: "{{ lookup('env', 'JWT_SECRET') }}"
+        ADMIN_USER: "{{ lookup('env', 'ADMIN_USER') }}"
+        ADMIN_PASSWORD: "{{ lookup('env', 'ADMIN_PASSWORD') }}"
+        TARGET_HOST: "{{ lookup('env', 'TARGET_HOST') }}"
+
+    - name: Start per-version services (blue/green)
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.yml up -d
+        chdir: "{{ app_dir }}"
+      environment:
+        JWT_SECRET: "{{ lookup('env', 'JWT_SECRET') }}"
+        ADMIN_USER: "{{ lookup('env', 'ADMIN_USER') }}"
+        ADMIN_PASSWORD: "{{ lookup('env', 'ADMIN_PASSWORD') }}"
+        TARGET_HOST: "{{ lookup('env', 'TARGET_HOST') }}"

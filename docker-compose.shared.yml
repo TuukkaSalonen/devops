@@ -1,0 +1,16 @@
+services:
+  storage:
+    container_name: storage
+    image: harbor.treok.eu/devops_project_httusa/storage:latest
+    volumes:
+      - storage_data:/data
+    networks:
+      - service_network
+    restart: unless-stopped
+
+networks:
+  service_network:
+    external: true
+
+volumes:
+  storage_data:
